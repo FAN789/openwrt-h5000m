@@ -30,7 +30,7 @@ source "${ENV_FILE}"
 
 [[ "${OPENWRT_COMMIT}" =~ ^[0-9a-f]{40}$ ]]
 [ "${OPENWRT_REVISION}" = r35346-e9aa5bea9f ]
-[ "${DAED_VERSION}" = 2026.07.17-r3 ]
+[ "${DAED_VERSION}" = 2026.07.31-r3 ]
 
 for option in \
 	CONFIG_TARGET_mediatek_filogic_DEVICE_hiveton_h5000m \

@@ -1,6 +1,6 @@
 --- a/feeds/daed/daed/Makefile
 +++ b/feeds/daed/daed/Makefile
-@@ -10,7 +10,7 @@ CORE_VERSION:=core-09c6c8c
+@@ -10,6 +10,6 @@ CORE_VERSION:=core-caa6f5e
  WING_HASH_SHORT:=$(shell echo $(WING_VERSION) | cut -d- -f2)
  CORE_HASH_SHORT:=$(shell echo $(CORE_VERSION) | cut -d- -f2)
 -PKG_RELEASE:=1

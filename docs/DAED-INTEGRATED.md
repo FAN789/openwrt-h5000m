@@ -43,9 +43,9 @@ daed 自己的首位用户初始化模板。数据库种子只保留停止状态
 `/etc/h5000m-daed-build`，独立 daed 离线包也会检查该标记，禁止安装到不兼容
 内核。
 
-`h5000m-daed-defaults` 与 GeoData 管理器源码统一由独立
-[`luci-app-daed-h5000m`](https://github.com/FAN789/luci-app-daed-h5000m)
-仓库提供。该仓库是 daed、GeoData、默认策略和同 ABI 依赖的唯一发布入口；
+`h5000m-daed-defaults` 与 GeoData 管理器源码统一由本地项目
+`../luci-app-daed-h5000m` 提供。该项目不再公开发布，是 daed、GeoData、默认
+策略和同 ABI 依赖的本地维护入口；
 OpenWrt 内部仍拆分 APK，以支持安全升级和回滚。默认包只在
 `/etc/daed/wing.db` 不存在时写入空资源的清洁状态库：daed 管理面板默认启用，
 代理运行状态保持停止；首位管理员登录后由前端创建唯一一套默认资源。已有
