@@ -50,12 +50,12 @@ UPnP 来自 OpenWrt 官方软件源，直接预装在主包中，不建立独立
 
 构建参数集中在 `configs/official-base.env`：
 
-- OpenWrt：`r35346-e9aa5bea9f`
+- OpenWrt：`r35754-ee91a6f9be`
 - 目标：`mediatek/filogic`
 - 设备：`hiveton_h5000m`
 - 架构：`aarch64_cortex-a53`
-- Kernel：`6.18.38`
-- Kernel ABI：`93edd57b5daa2a685ba2b251f368f171`
+- Kernel：`6.18.41`
+- Kernel ABI：`b4cc7b020822533cf84ae4a8c29d08ec`
 - 构建器：官方 OpenWrt Snapshot ImageBuilder（固定 SHA256）
 
 官方端口定义保持不变：`eth0` 是 LAN，`eth1` 是有线 WAN。MAC、WiFi EEPROM、LED 和 sysupgrade 布局全部沿用 OpenWrt 官方实现。
@@ -137,6 +137,7 @@ docs/DAED-INTEGRATED.md           daed 变体边界、GeoData 和验收要求
 official-base-files/              最小产品默认值和插件公钥
 scripts/check-main-package.sh     仓库边界与隐私检查
 scripts/check-daed-integrated-source.sh  daed 变体源码和隐私边界检查
+scripts/prepare-daed-integrated-source.sh  将锁定版本和本地插件注入干净源码树
 scripts/build-official-base-local.sh  构建和固件内容验证
 ```
 

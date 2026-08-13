@@ -4,6 +4,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="${ROOT_DIR}/configs/integrated-daed.env"
+FEEDS_FILE="${ROOT_DIR}/configs/integrated-daed.feeds"
 SEED="${ROOT_DIR}/configs/integrated-daed.seed"
 PATCH="${ROOT_DIR}/configs/daed-package.patch"
 RUNTIME_PATCH="${ROOT_DIR}/configs/daed-runtime.patch"
@@ -15,7 +16,7 @@ WEB_DEFAULTS_PATCH="${ROOT_DIR}/configs/daed-web-defaults.patch"
 RUNTIME_OPT_PATCH="${ROOT_DIR}/configs/daed-runtime-optimizations.patch"
 MARKER="${ROOT_DIR}/integrated-daed-files/etc/h5000m-daed-build"
 
-for file in "${ENV_FILE}" "${SEED}" "${PATCH}" "${RUNTIME_PATCH}" \
+for file in "${ENV_FILE}" "${FEEDS_FILE}" "${SEED}" "${PATCH}" "${RUNTIME_PATCH}" \
 	"${REPRO_PATCH}" "${LAYOUT_PATCH}" "${FAN_PATCH}" "${DASHBOARD_PATCH}" \
 	"${WEB_DEFAULTS_PATCH}" "${RUNTIME_OPT_PATCH}" "${MARKER}" \
 	"${ROOT_DIR}/docs/DAED-INTEGRATED.md"; do
@@ -25,12 +26,26 @@ for file in "${ENV_FILE}" "${SEED}" "${PATCH}" "${RUNTIME_PATCH}" \
 	}
 done
 
+bash -n "${ROOT_DIR}/scripts/prepare-daed-integrated-source.sh"
+
 # shellcheck source=/dev/null
 source "${ENV_FILE}"
 
 [[ "${OPENWRT_COMMIT}" =~ ^[0-9a-f]{40}$ ]]
-[ "${OPENWRT_REVISION}" = r35346-e9aa5bea9f ]
+[ "${OPENWRT_REVISION}" = r35754-ee91a6f9be ]
 [ "${DAED_VERSION}" = 2026.07.31-r3 ]
+
+for feed_commit in \
+	"packages ${PACKAGES_FEED_COMMIT}" \
+	"luci ${LUCI_FEED_COMMIT}" \
+	"routing ${ROUTING_FEED_COMMIT}" \
+	"telephony ${TELEPHONY_FEED_COMMIT}" \
+	"video ${VIDEO_FEED_COMMIT}" \
+	"daed ${DAED_FEED_COMMIT}" \
+	"qmodem ${QMODEM_FEED_COMMIT}"; do
+	set -- ${feed_commit}
+	grep -Eq "^src-git $1 .+\\^$2$" "${FEEDS_FILE}"
+done
 
 for option in \
 	CONFIG_TARGET_mediatek_filogic_DEVICE_hiveton_h5000m \

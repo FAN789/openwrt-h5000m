@@ -1,14 +1,14 @@
 # H5000M daed 集成固件
 
 该构建变体面向需要 daed 的 H5000M。它继续固定在 OpenWrt
-`r35346-e9aa5bea9f` 源码，但由于官方镜像没有开启 daed 运行所需的内核 BTF
+`r35754-ee91a6f9be` 源码，但由于官方镜像没有开启 daed 运行所需的内核 BTF
 和 XDP sockets，不能使用官方 ImageBuilder，也不能向官方固件混装其他 ABI
 的内核模块。
 
 ## 构建边界
 
-- OpenWrt 源码固定为 `e9aa5bea9f`
-- 构建命令固定传入 `REVISION=r35346-e9aa5bea9f`，避免浅克隆把发布修订号误算为 `r0`
+- OpenWrt 源码固定为 `ee91a6f9be`
+- 固件身份由 `CONFIG_VERSION_CODE=r35754-ee91a6f9be` 固定；浅克隆显示的 Git 计数不作为发布版本依据
 - 目标固定为 `mediatek/filogic`、`hiveton_h5000m`
 - 内核开启 BTF、cgroup BPF、BPF events 和 XDP sockets
 - FA880 使用完整 LLVM 14 工具目录 `/usr/lib/llvm-14` 编译并剥离 eBPF 对象
@@ -19,7 +19,9 @@
 - 内置经过脱敏审计的全局、DNS、路由和 `proxy` 策略组默认值
 - 不包含节点、订阅、UUID、服务器、SNI、用户、JWT 或其他凭据
 
-构建配置种子为 `configs/integrated-daed.seed`，daed 包的 GeoData 依赖替换见
+构建配置种子为 `configs/integrated-daed.seed`，官方与第三方 feed 的统一锁定清单为
+`configs/integrated-daed.feeds`，源码注入入口为
+`scripts/prepare-daed-integrated-source.sh`。daed 包的 GeoData 依赖替换见
 `configs/daed-package.patch`，运行时固定数据路径的补丁见
 `configs/daed-runtime.patch`，去除非确定性 Go 模块更新并固定 pnpm 的补丁见
 `configs/daed-reproducible.patch`，处理上游递归源码包中已包含 wing 的补丁见
