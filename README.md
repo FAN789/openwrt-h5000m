@@ -137,7 +137,6 @@ docs/DAED-INTEGRATED.md           daed 变体边界、GeoData 和验收要求
 official-base-files/              最小产品默认值和插件公钥
 scripts/check-main-package.sh     仓库边界与隐私检查
 scripts/check-daed-integrated-source.sh  daed 变体源码和隐私边界检查
-scripts/prepare-daed-integrated-source.sh  将锁定版本和本地插件注入干净源码树
 scripts/build-official-base-local.sh  构建和固件内容验证
 ```
 
