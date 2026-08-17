@@ -2,9 +2,13 @@ name: 构建 H5000M 官方基础固件
 
 on:
   workflow_dispatch:
+  push:
+    tags:
+      - 'openwrt-*'
+      - 'v*'
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -21,17 +25,19 @@ jobs:
         run: ./scripts/check-main-package.sh
 
   build:
-    name: 官方 ImageBuilder
+    name: 官方 ImageBuilder 云编译
     needs: check
-    runs-on: [self-hosted, Linux, X64, homelab, lxc, openwrt-h5000m]
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
       - name: 检出项目
         uses: actions/checkout@v4
 
+      - name: 安装构建依赖
+        run: sudo apt-get update && sudo apt-get install -y squashfs-tools zstd
+
       - name: 构建并验证基础固件
         env:
-          OPENWRT_LOCAL_CACHE: /home/builder/openwrt-official-cache
           OPENWRT_LOCAL_ARTIFACTS: ${{ github.workspace }}/artifacts
         run: ./scripts/build-official-base-local.sh
 
@@ -42,3 +48,16 @@ jobs:
           path: artifacts/H5000M-official-base-*/
           if-no-files-found: error
           retention-days: 14
+
+      - name: 发布 Release（tag 触发）
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          set -euo pipefail
+          art_dir="$(ls -d artifacts/H5000M-official-base-* | head -1)"
+          cd "${art_dir}"
+          files=(openwrt-*-squashfs-sysupgrade.bin SHA256SUMS BUILD-INFO.txt installed-package-manifest.txt)
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            gh release upload "${GITHUB_REF_NAME}" "${files[@]}" --clobber
+          else
+            gh release create "${GITHUB_REF_NAME}" "${files[@]}"               --title "H5000M 官方基础固件 ${GITHUB_REF_NAME}"               --notes "由 GitHub Actions 云编译发布。使用官方 OpenWrt ImageBuilder 构建，仅含系统本体、LuCI、中文与常用工具（不含任何自研/代理插件）。"
+          fi
