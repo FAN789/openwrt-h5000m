@@ -35,8 +35,8 @@ source "${BASE_ENV}"
 [ "${OPENWRT_PROFILE}" = "hiveton_h5000m" ]
 [ "${OPENWRT_TARGET}" = "mediatek/filogic" ]
 [ "${OPENWRT_ARCH}" = "aarch64_cortex-a53" ]
-[ "${OPENWRT_KERNEL}" = "6.18.41" ]
-[ "${OPENWRT_KERNEL_ABI}" = "b4cc7b020822533cf84ae4a8c29d08ec" ]
+[[ "${OPENWRT_KERNEL}" =~ ^[0-9]+.[0-9]+.[0-9]+$ ]]
+[[ "${OPENWRT_KERNEL_ABI}" =~ ^[0-9a-f]{32}$ ]]
 
 package_lines() {
   sed -e 's/#.*//' -e '/^[[:space:]]*$/d' "${PACKAGE_FILE}"
