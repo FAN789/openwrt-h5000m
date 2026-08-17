@@ -1,6 +1,6 @@
 # openwrt-H5000M
 
-Hiveton/Airpi H5000M 的干净基础固件构建项目。主包直接使用 OpenWrt 官方 ImageBuilder 和官方 H5000M 设备支持，只补充 Web 管理、中文、常用工具和产品级首启默认值，不维护 DTS、端口布局、内核补丁或自研应用副本。
+Hiveton H5000M 的干净基础固件构建项目。主包直接使用 OpenWrt 官方 ImageBuilder 与官方 H5000M 设备支持，只补充 Web 管理、中文、常用工具和产品级首启默认值，不维护 DTS、端口布局、内核补丁或自研应用副本。
 
 ## 主包边界
 
@@ -15,24 +15,11 @@ Hiveton/Airpi H5000M 的干净基础固件构建项目。主包直接使用 Open
 
 主包明确不包含：
 
-- H5000M 风扇管理
-- MT5700M 模组管理和 5G 流量统计
-- 有线 WAN / 5G 出口优先级
-- PassWall2 主程序、运行依赖、代理核心、节点、分流或凭据配置
-- QModem 主程序、第三方 feed、原厂 MT5700M WebUI
-- EEPROM 自动写入、非官方 DTS 或内核补丁
+- 任何自研 LuCI 插件（风扇、5G 模组管理、出口优先级等）
+- 任何代理软件及其依赖（主程序、运行依赖、代理内核、节点、分流或凭据配置）
+- 第三方 feed、非官方 DTS 或内核补丁
 
 这些功能以独立签名插件交付，插件故障不会影响基础系统启动。
-
-## daed 集成变体
-
-daed 依赖内核 BTF 与 XDP sockets，官方 H5000M 镜像未提供这两个能力，因此
-另设同一官方源码版本构建的 daed 集成变体。该变体不改变主包的干净
-ImageBuilder 路线，也不向官方 ABI 固件混装内核模块。它只对风扇 cooling-map
-做最小 DTS 调整，CPU 降频、hot/critical 保护仍由内核管理。配置边界、双版本
-GeoData 和验证要求见 [`docs/DAED-INTEGRATED.md`](docs/DAED-INTEGRATED.md)。
-该变体内置脱敏的 daed 全局、DNS、路由和策略组默认值；节点、订阅、用户及凭据
-始终由最终用户自行添加。
 
 ## 独立插件
 
@@ -41,8 +28,6 @@ GeoData 和验证要求见 [`docs/DAED-INTEGRATED.md`](docs/DAED-INTEGRATED.md)�
 | H5000M 风扇管理 | [luci-app-h5000m-fancontrol](https://github.com/FAN789/luci-app-h5000m-fancontrol) |
 | MT5700M 模组管理及 5G 流量统计 | [luci-app-mt5700m](https://github.com/FAN789/luci-app-mt5700m) |
 | 有线 WAN / 5G 出口优先级 | [luci-app-h5000m-netmode](https://github.com/FAN789/luci-app-h5000m-netmode) |
-| daed、GeoIP / GeoSite 与同 ABI 离线套件 | 本地项目 `../luci-app-daed-h5000m`（不公开发布） |
-| PassWall2 离线安装包（可选，不集成进 daed 变体） | [luci-app-passwall2-h5000m](https://github.com/FAN789/luci-app-passwall2-h5000m) |
 
 UPnP 来自 OpenWrt 官方软件源，直接预装在主包中，不建立独立项目。
 
@@ -74,7 +59,6 @@ UPnP 来自 OpenWrt 官方软件源，直接预装在主包中，不建立独立
 - SSH：默认开启 root 密码登录，同时保留公钥登录
 - UPnP：软件包默认集成，运行策略仍由 OpenWrt 官方配置控制
 - IPv6：默认不分配 ULA，仅使用活动上游委派的公网前缀；ULA 可由高级用户按需启用
-- PassWall2：主程序及 `dnsmasq-full`、nftables/kmod 依赖全部由独立离线包负责
 
 ## 首次使用
 
@@ -106,15 +90,16 @@ OPENWRT_LOCAL_ARTIFACTS=/home/builder/artifacts \
 ./scripts/build-official-base-local.sh
 ```
 
-构建脚本会校验 ImageBuilder 哈希、固件版本、Kernel ABI、LuCI、中文、UPnP、首启默认值和软件包清单，并确认主包使用官方精简 `dnsmasq`、没有混入 PassWall2 专用 kmod、代理核心或代理配置。
+构建脚本会校验 ImageBuilder 哈希、固件版本、Kernel ABI、LuCI、中文、UPnP、首启默认值和软件包清单，并确认主包使用官方精简 `dnsmasq`、没有混入代理专用 kmod、代理核心或代理配置。
 
 本地构建需要 `curl`、`flock`、GNU Make、`sha256sum`、GNU tar、`unsquashfs` 和 Zstandard 支持。
 
-## GitHub Actions
+## GitHub Actions（云编译）
 
-手动运行“构建 H5000M 官方基础固件”。工作流先执行主包边界检查，再在本地 Linux runner 上调用同一构建脚本，避免维护两套构建逻辑。
+- 手动触发：运行"构建 H5000M 官方基础固件"工作流。
+- 标签触发：推送 `openwrt-*` 或 `v*` 标签时自动构建并发布 GitHub Release。
 
-产物目录包含：
+工作流在 GitHub 托管的 `ubuntu-24.04` runner 上先执行主包边界检查，再调用同一构建脚本，避免维护两套构建逻辑。产物目录包含：
 
 - `openwrt-mediatek-filogic-hiveton_h5000m-squashfs-sysupgrade.bin`
 - `installed-package-manifest.txt`
@@ -123,20 +108,17 @@ OPENWRT_LOCAL_ARTIFACTS=/home/builder/artifacts \
 - `BUILD-INFO.txt`
 - `SHA256SUMS`
 
-每次构建都会把完整安装清单和基线信息放入产物目录；发布前应核对 `custom_plugins_included=false` 和 `upnp_included=true`。
-PassWall2 相关核对项为 `passwall2_included=false`、`passwall2_runtime_prerequisites_included=false` 和 `dnsmasq_variant=compact`。
+发布前应核对 `custom_plugins_included=false` 和 `upnp_included=true`。
 
 ## 仓库结构
 
 ```text
-.github/workflows/build.yml       唯一的主包工作流
+.github/workflows/build.yml       主包云编译工作流
 configs/official-base.env         固定官方基线和 ImageBuilder 哈希
 configs/official-base.packages    主包软件清单
-configs/integrated-daed.*         固定 daed 变体源码、feeds、ABI 和软件包种子
-docs/DAED-INTEGRATED.md           daed 变体边界、GeoData 和验收要求
 official-base-files/              最小产品默认值和插件公钥
 scripts/check-main-package.sh     仓库边界与隐私检查
-scripts/check-daed-integrated-source.sh  daed 变体源码和隐私边界检查
+scripts/check-product-safety.sh   产品安全与 ACL 检查
 scripts/build-official-base-local.sh  构建和固件内容验证
 ```
 
