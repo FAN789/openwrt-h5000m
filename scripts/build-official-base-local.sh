@@ -31,9 +31,21 @@ flock -n 9 || {
   exit 1
 }
 
+# The official snapshot ImageBuilder is rebuilt nightly, so its SHA256 is
+# not stable. Fetch the current value from the official sha256sums at build
+# time; fall back to the pinned env value only when the query fails.
+official_imagebuilder_sha() {
+  curl --fail --location --silent --retry 3 --retry-delay 3 \
+    "${OPENWRT_BASE_URL}/sha256sums" 2>/dev/null \
+    | sed -n "s/^\([0-9a-f]\{64\}\) \*${IMAGEBUILDER_FILE}$/\1/p" | head -1
+}
+
 verify_archive() {
-  [ -f "${ARCHIVE}" ] && \
-    echo "${IMAGEBUILDER_SHA256}  ${ARCHIVE}" | sha256sum -c - >/dev/null 2>&1
+  [ -f "${ARCHIVE}" ] || return 1
+  local want
+  want="$(official_imagebuilder_sha)"
+  [ -n "${want}" ] || want="${IMAGEBUILDER_SHA256}"
+  [ "$(sha256sum "${ARCHIVE}" | awk '{print $1}')" = "${want}" ]
 }
 
 if ! verify_archive; then
