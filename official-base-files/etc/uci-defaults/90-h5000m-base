@@ -52,7 +52,8 @@ if [ -f /etc/config/dropbear ]; then
 fi
 
 if [ -x /etc/init.d/ttyd ]; then
-	/etc/init.d/ttyd disable >/dev/null 2>&1 || true
+	/etc/init.d/ttyd enable >/dev/null 2>&1 || true
+	[ -z "${IPKG_INSTROOT:-}" ] && /etc/init.d/ttyd start >/dev/null 2>&1 || true
 fi
 
 # Provide the requested first-boot credentials. SSH public-key login remains

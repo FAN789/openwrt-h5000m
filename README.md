@@ -8,7 +8,7 @@ Hiveton H5000M 的干净基础固件构建项目。主包直接使用 OpenWrt �
 
 - OpenWrt 官方 H5000M 系统与驱动
 - LuCI HTTPS 管理界面和简体中文
-- 软件包管理器、ttyd（预装但默认停用）
+- 软件包管理器、ttyd（默认开启，http://192.168.10.1:7681/）
 - 常用诊断、存储和 USB 工具
 - OpenWrt 官方 UPnP LuCI 与 `miniupnpd-nftables`
 - H5000M 插件仓库公钥（仅公钥，不包含签名私钥）
@@ -54,7 +54,7 @@ UPnP 来自 OpenWrt 官方软件源，直接预装在主包中，不建立独立
 - WiFi：2.4GHz/5GHz 双频同名 `H5000M`，默认密码 `77778888`
 - WiFi 频宽：2.4GHz 使用 `EHT40`，5GHz 使用 `EHT160`
 - WiFi 安全与漫游：默认开启、WPA2/WPA3 混合模式、802.11w 可选保护及 802.11k 辅助漫游
-- ttyd：预装但默认停用
+- ttyd：默认开启（http://192.168.10.1:7681/）
 - SSH：默认开启 root 密码登录，同时保留公钥登录
 - UPnP：软件包默认集成，运行策略仍由 OpenWrt 官方配置控制
 - IPv6：默认不分配 ULA，仅使用活动上游委派的公网前缀；ULA 可由高级用户按需启用
