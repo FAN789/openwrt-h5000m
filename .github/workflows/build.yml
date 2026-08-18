@@ -39,7 +39,7 @@ jobs:
       - name: 构建并验证基础固件
         env:
           OPENWRT_LOCAL_ARTIFACTS: ${{ github.workspace }}/artifacts
-        run: ./scripts/build-official-base-local.sh
+        run: bash -x ./scripts/build-official-base-local.sh
 
       - name: 上传基础固件
         uses: actions/upload-artifact@v4
