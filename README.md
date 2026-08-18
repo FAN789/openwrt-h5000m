@@ -16,7 +16,6 @@ Hiveton H5000M 的干净基础固件构建项目。主包直接使用 OpenWrt �
 主包明确不包含：
 
 - 任何自研 LuCI 插件（风扇、5G 模组管理、出口优先级等）
-- 任何代理软件及其依赖（主程序、运行依赖、代理内核、节点、分流或凭据配置）
 - 第三方 feed、非官方 DTS 或内核补丁
 
 这些功能以独立签名插件交付，插件故障不会影响基础系统启动。
@@ -90,7 +89,7 @@ OPENWRT_LOCAL_ARTIFACTS=/home/builder/artifacts \
 ./scripts/build-official-base-local.sh
 ```
 
-构建脚本会校验 ImageBuilder 哈希、固件版本、Kernel ABI、LuCI、中文、UPnP、首启默认值和软件包清单，并确认主包使用官方精简 `dnsmasq`、没有混入代理专用 kmod、代理核心或代理配置。
+构建脚本会校验 ImageBuilder 哈希、固件版本、Kernel ABI、LuCI、中文、UPnP、首启默认值和软件包清单。
 
 本地构建需要 `curl`、`flock`、GNU Make、`sha256sum`、GNU tar、`unsquashfs` 和 Zstandard 支持。
 
