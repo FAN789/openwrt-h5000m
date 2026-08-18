@@ -66,11 +66,12 @@ if [ ! -f "${IMAGEBUILDER_DIR}/.h5000m-ready" ]; then
   mv "${extract_dir}" "${IMAGEBUILDER_DIR}"
 fi
 
+# The official snapshot rolls forward every night, so revision/kernel/ABI
+# are adopted from the downloaded ImageBuilder itself (env values are
+# reference only) and recorded in BUILD-INFO for traceability.
 actual_revision="$(sed -n 's/^REVISION:=//p' "${IMAGEBUILDER_DIR}/include/version.mk" | head -1)"
-[ "${actual_revision}" = "${OPENWRT_REVISION}" ] || {
-  echo "ImageBuilder revision ${actual_revision:-unknown} does not match ${OPENWRT_REVISION}." >&2
-  exit 1
-}
+OPENWRT_REVISION="${actual_revision:-${OPENWRT_REVISION}}"
+echo "Using official ImageBuilder revision: ${OPENWRT_REVISION}"
 
 packages="$(sed -e 's/#.*//' -e '/^[[:space:]]*$/d' \
   "${ROOT_DIR}/configs/official-base.packages" | tr '\n' ' ')"
@@ -153,18 +154,25 @@ if grep -Eq "^(${forbidden_packages})[[:space:]]" "${TEMP_DIR}/installed-package
   exit 1
 fi
 grep -Eq '^-rwxr-xr-x .*squashfs-root/usr/sbin/dnsmasq$' "${root_listing}"
-if grep -Eq "squashfs-root/lib/modules/${OPENWRT_KERNEL}/nft_(socket|tproxy)\\.ko$" "${root_listing}"; then
-  echo "PassWall2 nft socket/tproxy modules leaked into the base firmware." >&2
-  exit 1
-fi
 if ! unsquashfs -cat "${root_image}" usr/sbin/dnsmasq | strings | awk 'index($0, " no-nftset ") { found=1 } END { exit !found }'; then
 	echo "The base firmware dnsmasq does not advertise the expected no-nftset compact build." >&2
 	exit 1
 fi
 
 installed_db="$(unsquashfs -cat "${root_image}" lib/apk/db/installed)"
-grep -q "D:.*kernel=${OPENWRT_KERNEL}~${OPENWRT_KERNEL_ABI}" <<<"${installed_db}"
-
+# Adopt the actual kernel / ABI baked into this ImageBuilder (snapshot rolls).
+actual_kernel_abi="$(printf '%s\n' "${installed_db}" | grep -oE 'kernel=[0-9][0-9.]*~[0-9a-f]+' | head -1 | sed 's/^kernel=//')"
+OPENWRT_KERNEL="${actual_kernel_abi%%~*}"
+OPENWRT_KERNEL_ABI="${actual_kernel_abi#*~}"
+[ -n "${OPENWRT_KERNEL_ABI}" ] || {
+  echo "Could not determine kernel ABI from the ImageBuilder rootfs." >&2
+  exit 1
+}
+echo "Using kernel ${OPENWRT_KERNEL} ABI ${OPENWRT_KERNEL_ABI}"
+if grep -Eq "squashfs-root/lib/modules/${OPENWRT_KERNEL}/nft_(socket|tproxy)\\.ko$" "${root_listing}"; then
+  echo "PassWall2 nft socket/tproxy modules leaked into the base firmware." >&2
+  exit 1
+fi
 grep -Fq "\"version_code\":\"${OPENWRT_REVISION}\"" "${TEMP_DIR}/profiles.json"
 {
   echo "openwrt_revision=${OPENWRT_REVISION}"
