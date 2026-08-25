@@ -133,7 +133,7 @@ if grep -Eq 'uci .*set .*bss_transition' <<<"${base_defaults}"; then
 	echo "Unsupported bss_transition setting would prevent the default APs from starting." >&2
 	exit 1
 fi
-grep -q '/etc/init.d/ttyd disable' <<<"${base_defaults}"
+grep -q '/etc/init.d/ttyd enable' <<<"${base_defaults}"
 
 required_packages=(
   luci luci-ssl luci-i18n-base-zh-cn luci-app-package-manager
