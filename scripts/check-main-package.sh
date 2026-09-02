@@ -89,13 +89,30 @@ openssl pkey -pubin \
   -in "${ROOT_DIR}/official-base-files/etc/apk/keys/h5000m-plugins.pem" \
   -noout >/dev/null
 
-privacy_regex='(vless://|vmess://|trojan://|-----BEGIN [A-Z ]*PRIVATE KEY-----)'
+privacy_regex='(vless://|vmess://|trojan://|ss://|hysteria2?://|-----BEGIN [A-Z ]*PRIVATE KEY-----|github_pat_[A-Za-z0-9_]{20,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|https?://[^[:space:]/]+:[^[:space:]@]+@|Authorization:[[:space:]]*(Basic|Bearer)[[:space:]]+[A-Za-z0-9._~+/-]+)'
 privacy_leak=0
 while IFS= read -r path; do
   case "${path}" in
     "${ROOT_DIR}/scripts/check-main-package.sh") continue ;;
   esac
-  if grep -nEI "${privacy_regex}" "${path}"; then
+  if grep -qEI "${privacy_regex}" "${path}"; then
+    echo "Potential credential, private key, or proxy endpoint in: ${path#${ROOT_DIR}/}" >&2
+    privacy_leak=1
+  fi
+
+  # Public examples use /home/builder. Reject user-specific home directories
+  # and Windows profile paths without echoing their potentially private value.
+  while IFS= read -r home_path; do
+    case "${home_path}" in
+      /home/builder) ;;
+      *)
+        echo "Potential user-specific home path in: ${path#${ROOT_DIR}/}" >&2
+        privacy_leak=1
+        ;;
+    esac
+  done < <(grep -Eo '/home/[A-Za-z0-9._-]+' "${path}" | sort -u || true)
+  if grep -qE '([A-Za-z]:\\Users\\|\\\\[0-9]{1,3}(\.[0-9]{1,3}){3}\\)' "${path}"; then
+    echo "Potential local Windows or network path in: ${path#${ROOT_DIR}/}" >&2
     privacy_leak=1
   fi
 done < <(find "${ROOT_DIR}" \

@@ -30,17 +30,21 @@ Hiveton H5000M 的干净基础固件构建项目。主包直接使用 OpenWrt �
 
 UPnP 来自 OpenWrt 官方软件源，直接预装在主包中，不建立独立项目。
 
-## 官方基线
+## 构建基线
 
-构建参数集中在 `configs/official-base.env`：
+主包跟随 OpenWrt 官方 Snapshot。稳定不变的目标参数集中在
+`configs/official-base.env`：
 
-- OpenWrt：`r35754-ee91a6f9be`
 - 目标：`mediatek/filogic`
 - 设备：`hiveton_h5000m`
 - 架构：`aarch64_cortex-a53`
-- Kernel：`6.18.41`
-- Kernel ABI：`b4cc7b020822533cf84ae4a8c29d08ec`
-- 构建器：官方 OpenWrt Snapshot ImageBuilder（固定 SHA256）
+- 构建器：官方 OpenWrt Snapshot ImageBuilder
+
+Snapshot 的 revision、Kernel、Kernel ABI 和 ImageBuilder SHA256 会随上游更新。
+普通构建会读取当前官方 ImageBuilder 的 SHA256，并把本次实际使用的版本与哈希写入
+`BUILD-INFO.txt`。`configs/official-base.env` 中的版本和哈希仅作为最近一次已验证的
+回退基线；发布状态以[最新 Release](https://github.com/FAN789/openwrt-H5000M/releases/latest)
+附带的 `BUILD-INFO.txt` 和 `SHA256SUMS` 为准。
 
 官方端口定义保持不变：`eth0` 是 LAN，`eth1` 是有线 WAN。MAC、WiFi EEPROM、LED 和 sysupgrade 布局全部沿用 OpenWrt 官方实现。
 
@@ -89,12 +93,19 @@ OPENWRT_LOCAL_ARTIFACTS=/home/builder/artifacts \
 ./scripts/build-official-base-local.sh
 ```
 
+需要复现实验性构建且本地缓存中仍有对应 ImageBuilder 时，可显式使用回退基线：
+
+```sh
+OPENWRT_USE_PINNED_IMAGEBUILDER=1 ./scripts/build-official-base-local.sh
+```
+
 构建脚本会校验 ImageBuilder 哈希、固件版本、Kernel ABI、LuCI、中文、UPnP、首启默认值和软件包清单。
 
 本地构建需要 `curl`、`flock`、GNU Make、`sha256sum`、GNU tar、`unsquashfs` 和 Zstandard 支持。
 
 ## GitHub Actions（云编译）
 
+- 定时触发：每周一 `04:00 UTC`（北京时间 `12:00`）自动构建并发布。
 - 手动触发：运行"构建 H5000M 官方基础固件"工作流。
 - 标签触发：推送 `openwrt-*` 或 `v*` 标签时自动构建并发布 GitHub Release。
 
@@ -112,8 +123,8 @@ OPENWRT_LOCAL_ARTIFACTS=/home/builder/artifacts \
 ## 仓库结构
 
 ```text
-.github/workflows/build.yml       主包云编译工作流
-configs/official-base.env         固定官方基线和 ImageBuilder 哈希
+.github/workflows/build.yml       主包每周、手动和标签云编译工作流
+configs/official-base.env         目标参数及最近一次已验证的回退基线
 configs/official-base.packages    主包软件清单
 official-base-files/              最小产品默认值和插件公钥
 scripts/check-main-package.sh     仓库边界与隐私检查
@@ -121,4 +132,4 @@ scripts/check-product-safety.sh   产品安全与 ACL 检查
 scripts/build-official-base-local.sh  构建和固件内容验证
 ```
 
-更新 OpenWrt 基线时，必须同步更新 `official-base.env` 的版本与 ImageBuilder SHA256，并重新完成启动、LAN/WAN、LuCI、UPnP、升级和插件安装回归。
+更新回退基线或发布新固件时，必须重新完成启动、LAN/WAN、LuCI、UPnP、升级和插件安装回归，并保留该次构建的 `BUILD-INFO.txt` 与 `SHA256SUMS`。

@@ -8,12 +8,8 @@ source "${ROOT_DIR}/configs/official-base.env"
 CACHE_ROOT="${OPENWRT_LOCAL_CACHE:-${HOME}/cache}"
 ARTIFACT_ROOT="${OPENWRT_LOCAL_ARTIFACTS:-${HOME}/artifacts}"
 DOWNLOAD_DIR="${CACHE_ROOT}/downloads"
-IMAGEBUILDER_DIR="${CACHE_ROOT}/imagebuilder/${IMAGEBUILDER_SHA256}"
 ARCHIVE="${DOWNLOAD_DIR}/${IMAGEBUILDER_FILE}"
-FINAL_DIR="${ARTIFACT_ROOT}/H5000M-official-base-${OPENWRT_REVISION}"
-TEMP_DIR="${ARTIFACT_ROOT}/.H5000M-official-base-${OPENWRT_REVISION}.tmp"
 LOCK_FILE="${CACHE_ROOT}/.official-base.lock"
-TARGET_DIR="${IMAGEBUILDER_DIR}/bin/targets/${OPENWRT_TARGET}"
 
 for command in curl flock make sha256sum strings tar unsquashfs; do
   command -v "${command}" >/dev/null 2>&1 || {
@@ -21,6 +17,27 @@ for command in curl flock make sha256sum strings tar unsquashfs; do
     exit 1
   }
 done
+
+# The official snapshot ImageBuilder is rebuilt nightly, so its SHA256 is
+# not stable. Fetch the current value from the official directory at build
+# time; fall back to the pinned env value only when the query fails.
+official_imagebuilder_sha() {
+  curl --fail --location --silent --retry 3 --retry-delay 3 \
+    --connect-timeout 10 --max-time 20 \
+    "${OPENWRT_BASE_URL}/" 2>/dev/null \
+    | grep -F -m1 "href=\"${IMAGEBUILDER_FILE}\"" \
+    | sed -n 's/.*class="sh">\([0-9a-f]\{64\}\)<\/td>.*/\1/p'
+}
+
+if [ "${OPENWRT_USE_PINNED_IMAGEBUILDER:-0}" = "1" ]; then
+  EXPECTED_IMAGEBUILDER_SHA256="${IMAGEBUILDER_SHA256}"
+else
+  EXPECTED_IMAGEBUILDER_SHA256="$(official_imagebuilder_sha || true)"
+  [ -n "${EXPECTED_IMAGEBUILDER_SHA256}" ] \
+    || EXPECTED_IMAGEBUILDER_SHA256="${IMAGEBUILDER_SHA256}"
+fi
+IMAGEBUILDER_DIR="${CACHE_ROOT}/imagebuilder/${EXPECTED_IMAGEBUILDER_SHA256}"
+TARGET_DIR="${IMAGEBUILDER_DIR}/bin/targets/${OPENWRT_TARGET}"
 
 "${ROOT_DIR}/scripts/check-main-package.sh"
 
@@ -31,21 +48,9 @@ flock -n 9 || {
   exit 1
 }
 
-# The official snapshot ImageBuilder is rebuilt nightly, so its SHA256 is
-# not stable. Fetch the current value from the official sha256sums at build
-# time; fall back to the pinned env value only when the query fails.
-official_imagebuilder_sha() {
-  curl --fail --location --silent --retry 3 --retry-delay 3 \
-    "${OPENWRT_BASE_URL}/sha256sums" 2>/dev/null \
-    | sed -n "s/^\([0-9a-f]\{64\}\) \*${IMAGEBUILDER_FILE}$/\1/p" | head -1
-}
-
 verify_archive() {
   [ -f "${ARCHIVE}" ] || return 1
-  local want
-  want="$(official_imagebuilder_sha)"
-  [ -n "${want}" ] || want="${IMAGEBUILDER_SHA256}"
-  [ "$(sha256sum "${ARCHIVE}" | awk '{print $1}')" = "${want}" ]
+  [ "$(sha256sum "${ARCHIVE}" | awk '{print $1}')" = "${EXPECTED_IMAGEBUILDER_SHA256}" ]
 }
 
 if ! verify_archive; then
@@ -71,6 +76,8 @@ fi
 # reference only) and recorded in BUILD-INFO for traceability.
 actual_revision="$(sed -n 's/^REVISION:=//p' "${IMAGEBUILDER_DIR}/include/version.mk" | head -1)"
 OPENWRT_REVISION="${actual_revision:-${OPENWRT_REVISION}}"
+FINAL_DIR="${ARTIFACT_ROOT}/H5000M-official-base-${OPENWRT_REVISION}"
+TEMP_DIR="${ARTIFACT_ROOT}/.H5000M-official-base-${OPENWRT_REVISION}.tmp"
 echo "Using official ImageBuilder revision: ${OPENWRT_REVISION}"
 
 packages="$(sed -e 's/#.*//' -e '/^[[:space:]]*$/d' \
@@ -178,7 +185,7 @@ grep -Fq "\"version_code\":\"${OPENWRT_REVISION}\"" "${TEMP_DIR}/profiles.json"
   echo "openwrt_revision=${OPENWRT_REVISION}"
   echo "kernel=${OPENWRT_KERNEL}"
   echo "kernel_abi=${OPENWRT_KERNEL_ABI}"
-  echo "imagebuilder_sha256=${IMAGEBUILDER_SHA256}"
+  echo "imagebuilder_sha256=${EXPECTED_IMAGEBUILDER_SHA256}"
   echo "target=${OPENWRT_TARGET}"
   echo "profile=${OPENWRT_PROFILE}"
   echo "architecture=${OPENWRT_ARCH}"
